@@ -146,13 +146,13 @@ class _CommandDialogState extends State<CommandDialog> {
                     scrollDirection: Axis.horizontal,
                     child: Row(
                       children: [
-                        _buildCategoryChip('Semua (${_commands.length})', 'all', setModalState),
+                        _buildCategoryChip('SEMUA (${_commands.length})', 'all', setModalState),
                         const SizedBox(width: 6),
-                        _buildCategoryChip('🚀 Combo (${_commands.where((c) => c.category == 'combo').length})', 'combo', setModalState),
+                        _buildCategoryChip('COMBO FLOWS (${_commands.where((c) => c.category == 'combo').length})', 'combo', setModalState),
                         const SizedBox(width: 6),
-                        _buildCategoryChip('⚡ Sender Bug (${_commands.where((c) => c.category == 'single').length})', 'single', setModalState),
+                        _buildCategoryChip('SENDER BUGS (${_commands.where((c) => c.category == 'single').length})', 'single', setModalState),
                         const SizedBox(width: 6),
-                        _buildCategoryChip('🛠️ Utility (${_commands.where((c) => c.category == 'utility').length})', 'utility', setModalState),
+                        _buildCategoryChip('UTILITY (${_commands.where((c) => c.category == 'utility').length})', 'utility', setModalState),
                       ],
                     ),
                   ),
