@@ -18,6 +18,7 @@ class WebSocketService extends ChangeNotifier {
 
   WsConnectionStatus _status = WsConnectionStatus.disconnected;
   WsConnectionStatus get status => _status;
+  WsConnectionStatus get connectionStatus => _status;
   bool get isConnected => _status == WsConnectionStatus.connected;
   bool get isConnecting => _status == WsConnectionStatus.connecting;
 
@@ -242,6 +243,13 @@ class WebSocketService extends ChangeNotifier {
     _channel = null;
     _status = WsConnectionStatus.disconnected;
     notifyListeners();
+  }
+
+  void reconnect() {
+    disconnect();
+    _intentionalDisconnect = false;
+    _reconnectAttempts = 0;
+    connect();
   }
 
   @override
