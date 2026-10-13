@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import '../models/terminal_log.dart';
 import '../services/websocket_service.dart';
 import '../theme/app_theme.dart';

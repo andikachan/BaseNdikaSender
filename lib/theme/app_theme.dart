@@ -8,6 +8,7 @@ class AppTheme {
   static const Color cardDark = Color(0xFF1B2230);
   static const Color neonGreen = Color(0xFF00FF88);
   static const Color neonRed = Color(0xFFFF0055);
+  static const Color neonPink = Color(0xFFFF007F);
   static const Color neonYellow = Color(0xFFFFD700);
   static const Color neonPurple = Color(0xFF9D00FF);
   static const Color textMuted = Color(0xFF8A99AD);

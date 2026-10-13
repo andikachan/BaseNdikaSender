@@ -59,19 +59,6 @@ class _CommandDialogState extends State<CommandDialog> {
     super.dispose();
   }
 
-  List<SenderCommand> get _filteredCommands {
-    final query = _searchController.text.trim().toLowerCase();
-    return _commands.where((c) {
-      final matchesCategory = _activeCategoryFilter == 'all' || c.category == _activeCategoryFilter;
-      final matchesQuery = query.isEmpty ||
-          c.name.toLowerCase().contains(query) ||
-          c.id.toLowerCase().contains(query) ||
-          c.description.toLowerCase().contains(query) ||
-          c.aliases.any((a) => a.toLowerCase().contains(query));
-      return matchesCategory && matchesQuery;
-    }).toList();
-  }
-
   void _showCommandPickerModal() {
     showModalBottomSheet(
       context: context,
