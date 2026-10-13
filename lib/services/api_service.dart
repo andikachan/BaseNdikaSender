@@ -236,4 +236,24 @@ class ApiService {
       );
     }
   }
+
+  /// 5. GET /api/commands
+  Future<List<dynamic>> getAvailableCommands() async {
+    final uri = Uri.parse('$_baseUrl/api/commands?key=$_apiKey');
+    try {
+      final response = await http
+          .get(uri, headers: _getHeaders())
+          .timeout(const Duration(seconds: 8));
+
+      final dynamic decoded = jsonDecode(response.body);
+      if (decoded is Map<String, dynamic> && decoded['success'] == true) {
+        final data = decoded['data'] as Map<String, dynamic>?;
+        if (data != null && data['commands'] is List) {
+          return data['commands'] as List<dynamic>;
+        }
+      }
+    } catch (_) {}
+    return [];
+  }
 }
+

@@ -25,6 +25,9 @@ try {
   // dotenv opsional
 }
 
+// Import Engine Fungsi Sender Lengkap
+const senderEngine = require("./lib/sender_functions");
+
 // ============================================================================
 // KONFIGURASI SISTEM
 // ============================================================================
@@ -34,10 +37,9 @@ const CONFIG = {
   CORS_ORIGIN: process.env.CORS_ORIGIN || "*",
   SESSION_DIR: path.resolve(__dirname, process.env.SESSION_DIR || "./session"),
   PING_INTERVAL_MS: 20000, // 20 detik untuk heartbeat WebSocket
-  MAX_TEST_COUNT: 5,
-  MIN_DELAY_MS: 1000,
-  MAX_DELAY_MS: 10000,
-  ALLOWED_COMMANDS: ["test-message", "ping"]
+  MAX_TEST_COUNT: 100,
+  MIN_DELAY_MS: 50,
+  MAX_DELAY_MS: 10000
 };
 
 // ============================================================================
@@ -377,7 +379,7 @@ class BotLifecycleManager {
   }
 
   /**
-   * Eksekusi perintah pengujian yang aman
+   * Eksekusi fungsi sender atau perintah pengujian bot
    */
   async executeTestCommand({ target, command, count = 1, delayMs = 1000 }) {
     if (!this.sock || this.connectionState !== "connected" || !this.isRegistered()) {
@@ -388,31 +390,31 @@ class BotLifecycleManager {
       };
     }
 
-    if (!CONFIG.ALLOWED_COMMANDS.includes(command)) {
+    const foundCmd = senderEngine.findCommand(command);
+    if (!foundCmd) {
       throw {
         statusCode: 400,
         code: "INVALID_COMMAND",
-        message: `Perintah '${command}' tidak diizinkan. Perintah yang didukung: ${CONFIG.ALLOWED_COMMANDS.join(", ")}`
+        message: `Perintah '${command}' tidak ditemukan. Gunakan endpoint GET /api/commands untuk melihat seluruh katalog perintah sender yang tersedia.`
       };
     }
 
-    const cleanTarget = target.replace(/[^0-9]/g, "");
-    if (!cleanTarget || cleanTarget.length < 8 || cleanTarget.length > 15) {
+    const cleanTarget = String(target).trim();
+    if (!cleanTarget || cleanTarget.length < 5) {
       throw {
         statusCode: 400,
         code: "INVALID_TARGET",
-        message: "Nomor target tidak valid. Gunakan format internasional (contoh: 6281234567890)."
+        message: "Target tidak valid. Masukkan nomor WhatsApp atau link / ID grup."
       };
     }
 
     const sanitizedCount = Math.min(Math.max(parseInt(count, 10) || 1, 1), CONFIG.MAX_TEST_COUNT);
     const sanitizedDelay = Math.min(Math.max(parseInt(delayMs, 10) || 1000, CONFIG.MIN_DELAY_MS), CONFIG.MAX_DELAY_MS);
-    const targetJid = `${cleanTarget}@s.whatsapp.net`;
 
     const commandId = `cmd_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
     this.activeCommandsCount++;
 
-    logger.info(`Memulai eksekusi perintah '${command}' ke ${cleanTarget} (Jumlah: ${sanitizedCount}, Delay: ${sanitizedDelay}ms) [ID: ${commandId}]`);
+    logger.info(`Memulai eksekusi '${foundCmd.name}' (${foundCmd.id}) ke ${cleanTarget} [Jumlah: ${sanitizedCount}, Delay: ${sanitizedDelay}ms, ID: ${commandId}]`);
 
     // Broadcast WebSocket event: command_started
     if (logger.wsServer) {
@@ -422,7 +424,9 @@ class BotLifecycleManager {
         data: {
           commandId,
           target: cleanTarget,
-          command,
+          command: foundCmd.id,
+          commandName: foundCmd.name,
+          category: foundCmd.category,
           count: sanitizedCount,
           delayMs: sanitizedDelay
         }
@@ -434,24 +438,19 @@ class BotLifecycleManager {
 
     // Jalankan secara asynchronous di background
     (async () => {
-      let sentCount = 0;
       try {
-        for (let i = 1; i <= sanitizedCount; i++) {
-          const testMsg = `⚡ [NDIKA BOT - TEST MESSAGE #${i}/${sanitizedCount}]\n` +
-                          `• Waktu: ${new Date().toLocaleString("id-ID")}\n` +
-                          `• Mode: Automated Test Verification\n` +
-                          `• Status: Sukses terkirim melalui API Dashboard.`;
-
-          await this.sock.sendMessage(targetJid, { text: testMsg });
-          sentCount++;
-          logger.info(`Terkirim pesan pengujian #${i}/${sanitizedCount} ke ${cleanTarget}`);
-
-          if (i < sanitizedCount) {
-            await new Promise((resolve) => setTimeout(resolve, sanitizedDelay));
+        await senderEngine.executeSenderCommand(this.sock, {
+          command: foundCmd.id,
+          target: cleanTarget,
+          count: sanitizedCount,
+          delayMs: sanitizedDelay,
+          logger,
+          onProgress: (msg) => {
+            logger.info(`[${commandId}] ${msg}`);
           }
-        }
+        });
 
-        logger.success(`Perintah '${command}' selesai sukses! (${sentCount}/${sanitizedCount} terkirim) [ID: ${commandId}]`);
+        logger.success(`Perintah '${foundCmd.name}' selesai dengan sukses! [ID: ${commandId}]`);
 
         // Broadcast WebSocket event: command_completed
         if (logger.wsServer) {
@@ -461,8 +460,9 @@ class BotLifecycleManager {
             data: {
               commandId,
               target: cleanTarget,
-              command,
-              totalSent: sentCount,
+              command: foundCmd.id,
+              commandName: foundCmd.name,
+              totalSent: sanitizedCount,
               status: "success"
             }
           });
@@ -471,7 +471,7 @@ class BotLifecycleManager {
           });
         }
       } catch (err) {
-        logger.error(`Eksekusi command '${command}' gagal: ${err.message || err} [ID: ${commandId}]`);
+        logger.error(`Eksekusi command '${foundCmd.name}' gagal: ${err.message || err} [ID: ${commandId}]`);
 
         // Broadcast WebSocket event: command_failed
         if (logger.wsServer) {
@@ -481,9 +481,10 @@ class BotLifecycleManager {
             data: {
               commandId,
               target: cleanTarget,
-              command,
-              error: err.message || "Failed to send message",
-              sentBeforeFail: sentCount
+              command: foundCmd.id,
+              commandName: foundCmd.name,
+              error: err.message || "Gagal mengeksekusi fungsi sender",
+              status: "failed"
             }
           });
           logger.wsServer.clients.forEach((c) => {
@@ -498,7 +499,9 @@ class BotLifecycleManager {
     return {
       commandId,
       target: cleanTarget,
-      command,
+      command: foundCmd.id,
+      commandName: foundCmd.name,
+      category: foundCmd.category,
       count: sanitizedCount,
       delayMs: sanitizedDelay,
       status: "queued_and_running"
@@ -691,13 +694,25 @@ app.post("/api/send-command", authenticateApiKey, async (req, res) => {
 });
 
 /**
+ * 5. GET /api/commands
+ * Katalog lengkap 39 perintah sender & combo
+ */
+app.get("/api/commands", (req, res) => {
+  return successResponse(res, "Daftar fungsi sender berhasil diperoleh.", {
+    total: senderEngine.COMMAND_CATALOG.length,
+    commands: senderEngine.getAllCommandsMetadata()
+  });
+});
+
+/**
  * Health Check Endpoint
  */
 app.get("/health", (req, res) => {
   return successResponse(res, "API Bridge is running healthy.", {
     status: "ok",
     timestamp: new Date().toISOString(),
-    uptime: Math.floor(process.uptime())
+    uptime: Math.floor(process.uptime()),
+    totalCommandsSupported: senderEngine.COMMAND_CATALOG.length
   });
 });
 
