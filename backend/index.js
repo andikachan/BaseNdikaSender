@@ -170,11 +170,17 @@ async function connectToWhatsApp() {
           ? mek.message.ephemeralMessage.message
           : mek.message;
       if (mek.key && mek.key.remoteJid === "status@broadcast") return;
-      if (!sock.public && !mek.key.fromMe && chatUpdate.type === "notify") return;
-      if (mek.key.id && mek.key.id.startsWith("BAE5") && mek.key.id.length === 16) return;
 
-      let m = smsg(sock, mek, store);
-      require("./handler")(sock, m, chatUpdate, store);
+      // MODE BASE SENDER WORKER:
+      // Bot ini didedikasikan khusus sebagai Sender API & Management Dashboard.
+      // Auto-reply dan eksekusi command chat (seperti .menu, .ping, dll.) dinonaktifkan
+      // agar bot tidak pernah membalas pesan obrolan di WhatsApp secara otomatis.
+      const senderJid = mek.key.participant || mek.key.remoteJid || "";
+      const text = mek.message.conversation || mek.message.extendedTextMessage?.text || "";
+      if (text) {
+        console.log(chalk.gray(`[INCOMING MSG] Dari ${senderJid}: "${text.slice(0, 40)}" (Dilewati - Tidak membalas)`));
+      }
+      return;
     } catch (err) {
       console.error(chalk.red("Error processing message upsert:"), err);
     }

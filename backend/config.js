@@ -5,7 +5,7 @@ const fs = require('fs');
 
 // Connection Settings
 global.connect = true; // true = Pairing Code, false = QR Code
-global.publicX = true; // true = Public Mode, false = Self Mode
+global.publicX = false; // Mode Self: Nonaktifkan respon publik ke chat
 
 // Bot & Owner Identity
 global.botname = "NDIKA BOT VIP";
