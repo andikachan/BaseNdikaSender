@@ -188,7 +188,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             TextField(
               controller: urlController,
               style: const TextStyle(color: Colors.white, fontSize: 12),
-              decoration: const InputDecoration(hintText: 'https://botapi.ndichan.xyz'),
+              decoration: const InputDecoration(hintText: 'https://base-api.ndichan.xyz'),
             ),
             const SizedBox(height: 12),
             const Text('API SECRET KEY', style: TextStyle(color: AppTheme.textMuted, fontSize: 10)),

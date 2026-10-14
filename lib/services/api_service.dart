@@ -10,7 +10,7 @@ class ApiService {
   static const String _prefApiKey = 'api_key';
 
   // Live Cloudflare Tunnel URL untuk bot di Pterodactyl
-  String _baseUrl = 'https://botapi.ndichan.xyz';
+  String _baseUrl = 'https://base-api.ndichan.xyz';
   String _apiKey = 'ndika_secret_key_2026';
 
   String get baseUrl => _baseUrl;

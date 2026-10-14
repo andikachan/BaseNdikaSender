@@ -33,7 +33,7 @@ class WebSocketService extends ChangeNotifier {
   int _reconnectAttempts = 0;
   bool _intentionalDisconnect = false;
 
-  String _baseUrl = 'https://botapi.ndichan.xyz';
+  String _baseUrl = 'https://base-api.ndichan.xyz';
   String _apiKey = 'ndika_secret_key_2026';
 
   void configure({required String baseUrl, required String apiKey}) {
